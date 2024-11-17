@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  zookeeper:
+    image: zookeeper:3.7
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOO_MY_ID: 1
+    volumes:
+      - ./zoo-data:/data
+      - ./zoo-log:/datalog
