@@ -62,10 +62,11 @@ class AgentsDispatcher:
         :return:
         """
         destroy_message = Message(MessageType.DESTROY_MESSAGE, {"entity": entity})
-        self.actor_system.tell(self.reference_book.agents_entities[entity], destroy_message)
         entity_type = entity.get_type()
         self.scene.entities[entity_type].remove(entity)
+        self.actor_system.tell(self.reference_book.agents_entities[entity], destroy_message)
         self.reference_book.remove_agent(entity)
+
 
     def get_entities(self, entity_type) -> list[AgentBase]:
         return self.scene.entities[entity_type]

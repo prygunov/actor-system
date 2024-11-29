@@ -27,17 +27,20 @@ class OrderAgent(AgentBase):
         self.subscribe(MessageType.ORDER_ASSIGN_RESPONSE, self.handle_order_assignment_response)
         self.subscribe(MessageType.DESTROY_MESSAGE, self.decline_courier)
 
+    @staticmethod
+    def find_couriers(self):
+        courier_entities = self.scene.entities['COURIER']
+        courier_addresses = list(map(lambda courier: self.reference_book.agents_entities[courier], courier_entities))
+        for courier in courier_addresses:
+            self.actor_system.tell(courier, Message(MessageType.REQUEST_COURIER_INFO, self.entity))
+
     def handle_init_message(self, message, sender,):
         self.dispatcher = message.msg_body.get('dispatcher')
         self.actor_system = message.msg_body['actor_system']
         self.scene = message.msg_body['scene']
         self.entity = message.msg_body['entity']
         self.reference_book = message.msg_body['reference_book']
-        courier_entities = self.scene.entities['COURIER']
-        courier_addresses = list(map(lambda courier: self.reference_book.agents_entities[courier], courier_entities))
-
-        for courier in courier_addresses:
-            self.actor_system.tell(courier, Message(MessageType.REQUEST_COURIER_INFO, self.entity))
+        self.find_couriers(self)
 
     def select_best_courier(self):
         best_courier = None
@@ -77,14 +80,15 @@ class OrderAgent(AgentBase):
         self.send(self.reference_book.agents_entities[courier], message)
 
     def handle_order_assignment_response(self, message, sender):
-        if message.msg_body:
+        if message.msg_body['accepted'] == True:
+            self.courier_infos = []
             self.unavailable_couriers = [] # order was taken
-            self.my_courier = sender
-            logging.log(logging.INFO, f"Order {self.entity.name} assigned to courier")
+            self.my_courier = message.msg_body['entity']
+            logging.log(logging.INFO, f"Order {self.entity.name} assigned to courier {self.my_courier.name}")
         else:
             self.my_courier = None
             self.unavailable_couriers.append(sender) # order could not be taken
-            self.select_best_courier()
+            self.find_couriers(self)
 
     def schedule_delivery(self, courier, interval):
         schedule_message = Message(MessageType.SCHEDULE_DELIVERY, {'interval': interval, 'order': self})

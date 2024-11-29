@@ -24,12 +24,14 @@ if __name__ == "__main__":
     orders = read_csv('../res/orders.csv')
     logging.info(f'Прочитаны заказы: {orders}')
 
-    for courier in couriers[:2]:
+    for courier in couriers[:10]:
         onto_description = {}
         entity = CourierEntity(onto_description, courier, scene)
         dispatcher.add_entity(entity)
 
-    for order in orders[:3]:
+    for order in orders[:10]:
         onto_description = {}
         entity = OrderEntity(onto_description, order, scene)
         dispatcher.add_entity(entity)
+
+    dispatcher.remove_agent(scene.entities['COURIER'][0])

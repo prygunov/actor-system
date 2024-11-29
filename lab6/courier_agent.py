@@ -30,16 +30,22 @@ class CourierAgent(AgentBase):
         self.entity = message.msg_body['entity']
 
     def get_info(self, message, sender):
+        current_cost = 0
+        for order in self.orders:
+            current_cost += order.price
+
         response_message = Message(MessageType.COURIER_INFO, {
             'entity': self.entity,
-            'cost': self.entity.cost,
+            'cost': self.entity.cost + current_cost,
             'point': self.entity.init_point,
         })
         self.actor_system.tell( self.reference_book.agents_entities[message.msg_body], response_message)
 
     def request_order_assign(self, message, sender):
         requested_entity: OrderEntity = message.msg_body['entity']
-        logging.log(logging.INFO, f"Courier {self.entity.name} was requested for order assignment")
+
+        if requested_entity in self.orders:
+            return
 
         can_take = True
         for order in self.orders:
@@ -54,12 +60,21 @@ class CourierAgent(AgentBase):
         if can_take:
             can_take = (self.entity.max_volume - current_volume) >= requested_entity.volume
 
-        message = Message(MessageType.ORDER_ASSIGN_RESPONSE, can_take)
+        message = Message(MessageType.ORDER_ASSIGN_RESPONSE, {
+            'entity': self.entity,
+            'accepted': can_take,
+        })
+        self.orders.append(requested_entity)
         self.actor_system.tell(self.reference_book.agents_entities[requested_entity], message)
 
     def decline_orders(self, message, sender):
+        logging.log(logging.INFO, f"Courier {self.entity.name} declined all orders")
+        message = Message(MessageType.ORDER_ASSIGN_RESPONSE, {
+            'entity': self.entity,
+            'accepted': False,
+        })
         for order in self.orders:
-            self.actor_system.tell(self.reference_book.agents_entities[order], Message(MessageType.ORDER_ASSIGN_RESPONSE, False))
+            self.actor_system.tell(self.reference_book.agents_entities[order], message)
 
     def remove_order(self, message, sender):
         order = message.msg_body['entity']
