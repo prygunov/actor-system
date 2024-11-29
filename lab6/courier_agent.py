@@ -44,8 +44,8 @@ class CourierAgent(AgentBase):
         can_take = True
         for order in self.orders:
             if (order.time_from < requested_entity.time_to and order.time_to > requested_entity.time_from):
-                can_take = False  # Указываем, что заказ нельзя взять из-за пересечения
-                break  # Выходим из цикла, так как уже нашли пересечение
+                can_take = False
+                break
 
         current_volume = 0
         for order in self.orders:
@@ -60,7 +60,6 @@ class CourierAgent(AgentBase):
     def decline_orders(self, message, sender):
         for order in self.orders:
             self.actor_system.tell(self.reference_book.agents_entities[order], Message(MessageType.ORDER_ASSIGN_RESPONSE, False))
-
 
     def remove_order(self, message, sender):
         order = message.msg_body['entity']
