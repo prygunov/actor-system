@@ -2,7 +2,7 @@ from kazoo.client import KazooClient
 from kazoo.exceptions import NodeExistsError
 import requests
 
-# Настройки для Zookeeper
+# Настройки для Zookeeper, поднимать в Docker
 ZOOKEEPER_HOSTS = '127.0.0.1:2181'
 
 # Настройки OpenAI

@@ -4,6 +4,7 @@ from typing import Any
 
 class MessageType(Enum):
     INIT_MESSAGE = 'Инициализация'
+    DESTROY_MESSAGE = 'Уничтожение агента'
 
     REQUEST_COURIER_INFO= 'Заказ курьеров'
     COURIER_INFO = 'Информация о параметрах курьера'
@@ -11,12 +12,11 @@ class MessageType(Enum):
 
     REQUEST_ORDER_ASSIGN = 'Запрос на назначение заказа'
     ORDER_ASSIGN_RESPONSE = 'Ответ на запрос на назначение заказа'
+    ORDER_DECLINING = 'Отмена заказа'
 
     REQUEST_DELIVERY_INTERVALS= 'Запрос временных промежутков'
     DELIVERY_INTERVALS= 'Интервал доставки'
     SCHEDULE_DELIVERY= 'Отложить доставку'
-    CREATE_ACTOR = 'Создание актора'
-    HELLO_WORLD = 'Приветствие'
 
 @dataclass
 class Message:

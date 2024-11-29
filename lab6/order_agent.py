@@ -6,20 +6,26 @@ from agent_base import AgentBase
 from order_entity import OrderEntity
 from message import MessageType, Message
 
+
+def calculate_distance(point1, point2):
+    return abs(point1.x - point2.x) + abs(point1.y - point2.y)
+
+
 class OrderAgent(AgentBase):
     """
     Класс агента заказа
     """
     def __init__(self):
         super().__init__()
+        self.my_courier = None
         self.entity: OrderEntity
         self.name = 'Агент заказа'
         self.type = 'ORDER'
         self.courier_infos = []
-        self.unavailabe_couriers = []
-        self.subscribe(MessageType.INIT_MESSAGE, self.handle_init_message)
+        self.unavailable_couriers = []
         self.subscribe(MessageType.COURIER_INFO, self.listen_couriers)
         self.subscribe(MessageType.ORDER_ASSIGN_RESPONSE, self.handle_order_assignment_response)
+        self.subscribe(MessageType.DESTROY_MESSAGE, self.decline_courier)
 
     def handle_init_message(self, message, sender,):
         self.dispatcher = message.msg_body.get('dispatcher')
@@ -39,13 +45,13 @@ class OrderAgent(AgentBase):
 
         for info in self.courier_infos:
             courier = info['entity']
-            if courier in self.unavailabe_couriers:
+            if courier in self.unavailable_couriers:
                 continue
             courier_location = info['point']
             cost = info['cost']
             order_location = self.entity.point_from
 
-            distance = self.calculate_distance(courier_location, order_location)
+            distance = calculate_distance(courier_location, order_location)
 
             if distance * cost < min_cost:
                 min_cost = distance * cost
@@ -72,15 +78,23 @@ class OrderAgent(AgentBase):
 
     def handle_order_assignment_response(self, message, sender):
         if message.msg_body:
-            self.unavailabe_couriers = [] # order was taken
+            self.unavailable_couriers = [] # order was taken
+            self.my_courier = sender
             logging.log(logging.INFO, f"Order {self.entity.name} assigned to courier")
         else:
-            self.unavailabe_couriers.append(sender) # order could not be taken
+            self.my_courier = None
+            self.unavailable_couriers.append(sender) # order could not be taken
             self.select_best_courier()
 
     def schedule_delivery(self, courier, interval):
         schedule_message = Message(MessageType.SCHEDULE_DELIVERY, {'interval': interval, 'order': self})
         self.dispatcher.actor_system.tell(courier, schedule_message)
 
-    def calculate_distance(self, point1, point2):
-        return abs(point1.x - point2.x) + abs(point1.y - point2.y)
+    def decline_courier(self, message, sender):
+        if self.my_courier:
+            self.send(self.my_courier, Message(MessageType.ORDER_DECLINING, self.entity))
+            self.my_courier = None
+            self.unavailable_couriers = []
+            logging.log(logging.INFO, f"Order {self.entity.name} removed")
+        else:
+            pass
