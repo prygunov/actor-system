@@ -1,11 +1,11 @@
 from thespian.actors import *
 from reference_book import ReferenceBook
-from lab3.base_entity import BaseEntity
+from lab6.base_entity import BaseEntity
 from message import MessageType, Message
-from lab3.agent_base import AgentBase
+from lab6.agent_base import AgentBase
 
-from lab3.courier_agent import CourierAgent
-from lab3.order_agent import OrderAgent
+from lab6.courier_agent import CourierAgent
+from lab6.order_agent import OrderAgent
 
 TYPES_AGENTS = {
     'COURIER': CourierAgent,
@@ -61,6 +61,8 @@ class AgentsDispatcher:
         :param entity:
         :return:
         """
+        destroy_message = Message(MessageType.DESTROY_MESSAGE, {"entity": entity})
+        self.actor_system.tell(self.reference_book.agents_entities[entity], destroy_message)
         entity_type = entity.get_type()
         self.scene.entities[entity_type].remove(entity)
         self.reference_book.remove_agent(entity)

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from lab3.order_entity import OrderEntity
+from lab6.order_entity import OrderEntity
 
 @dataclass
 class ScheduleItem:

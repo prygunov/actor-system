@@ -5,14 +5,12 @@ import traceback
 from thespian.actors import Actor, ActorAddress
 from message import MessageType, Message
 
-MBV = ABC
-
-class AgentBase(MBV, Actor):
+class AgentBase(ABC, Actor):
     def __init__(self):
         self.name = 'Базовый агент'
         self.handlers: Dict[MessageType, Callable[[Any, ActorAddress], None]] = {}
         self.subscribe(MessageType.INIT_MESSAGE, self.handle_init_message)
-    
+
     def subscribe(self, msg_type: MessageType, handler: Callable[[Any, ActorAddress], None]):
         """
         Подписка на события определенного типа

@@ -4,7 +4,7 @@ from agent_base import AgentBase
 from courier_entity import CourierEntity
 from message import MessageType, Message
 
-from lab3.order_entity import OrderEntity
+from lab6.order_entity import OrderEntity
 
 
 class CourierAgent(AgentBase):
@@ -19,7 +19,8 @@ class CourierAgent(AgentBase):
         self.orders :list(OrderEntity) = []
         self.subscribe(MessageType.REQUEST_COURIER_INFO, self.get_info)
         self.subscribe(MessageType.REQUEST_ORDER_ASSIGN, self.request_order_assign)
-        self.subscribe(MessageType.INIT_MESSAGE, self.handle_init_message)
+        self.subscribe(MessageType.ORDER_DECLINING, self.remove_order)
+        self.subscribe(MessageType.DESTROY_MESSAGE, self.decline_orders)
 
     def handle_init_message(self, message, sender):
         self.dispatcher = message.msg_body['dispatcher']
@@ -29,7 +30,6 @@ class CourierAgent(AgentBase):
         self.entity = message.msg_body['entity']
 
     def get_info(self, message, sender):
-        # TODO посчитать в какой интервал времени мы можем взять заказ
         response_message = Message(MessageType.COURIER_INFO, {
             'entity': self.entity,
             'cost': self.entity.cost,
@@ -47,20 +47,24 @@ class CourierAgent(AgentBase):
                 can_take = False  # Указываем, что заказ нельзя взять из-за пересечения
                 break  # Выходим из цикла, так как уже нашли пересечение
 
-        message = Message(MessageType.ORDER_ASSIGN_RESPONSE, can_take)
+        current_volume = 0
+        for order in self.orders:
+            current_volume += order.volume
 
-        # курьер добавил к себе заказ к выполнению
+        if can_take:
+            can_take = (self.entity.max_volume - current_volume) >= requested_entity.volume
+
+        message = Message(MessageType.ORDER_ASSIGN_RESPONSE, can_take)
         self.actor_system.tell(self.reference_book.agents_entities[requested_entity], message)
 
-        # TODO если курьер не может взять заказ или уходит с работы - сообщает об этом агентам своих заказов
+    def decline_orders(self, message, sender):
+        for order in self.orders:
+            self.actor_system.tell(self.reference_book.agents_entities[order], Message(MessageType.ORDER_ASSIGN_RESPONSE, False))
 
 
-    def provide_delivery_intervals(self, message, sender):
-        intervals = self.calculate_delivery_intervals()
-        response_message = Message(MessageType.DELIVERY_INTERVALS, {'intervals': intervals, 'courier': self})
-        self.dispatcher.actor_system.tell(sender, response_message)
+    def remove_order(self, message, sender):
+        order = message.msg_body['entity']
+        self.orders.remove(order)
+        logging.log(logging.INFO, f"Courier {self.entity.name} declined order {order.name}")
 
-    def calculate_delivery_intervals(self):
-        # Placeholder for the actual logic
-        return ["09:00-11:00", "13:00-15:00", "17:00-19:00"]
 
